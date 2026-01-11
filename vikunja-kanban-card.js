@@ -32,6 +32,14 @@ class VikunjaKanbanCardEditor extends LitElement {
         return '';
     }
 
+    get _view_id() {
+        if (this.config) {
+            return this.config.view_id || '';
+        }
+
+        return '';
+    }
+
     get _service_domain() {
         if (this.config) {
             return this.config.service_domain || '';
@@ -176,6 +184,15 @@ class VikunjaKanbanCardEditor extends LitElement {
 
             <div class="option">
                 <ha-textfield
+                    label="View ID (optional)"
+                    .configValue=${'view_id'}
+                    .value=${this._view_id}
+                    @input=${this.valueChanged}
+                ></ha-textfield>
+            </div>
+
+            <div class="option">
+                <ha-textfield
                     label="Service domain (default: vikunja)"
                     .configValue=${'service_domain'}
                     .value=${this._service_domain}
@@ -310,6 +327,21 @@ class VikunjaKanbanCard extends LitElement {
             }
         }
         return this._normalizeId(state.state);
+    }
+
+    _getViewId(state) {
+        if (this.config.view_id !== undefined && this.config.view_id !== null && this.config.view_id !== '') {
+            return this._normalizeId(this.config.view_id);
+        }
+        if (state && state.attributes) {
+            if (state.attributes.view_id !== undefined && state.attributes.view_id !== null) {
+                return this._normalizeId(state.attributes.view_id);
+            }
+            if (state.attributes.view && state.attributes.view.id !== undefined) {
+                return this._normalizeId(state.attributes.view.id);
+            }
+        }
+        return null;
     }
 
     _getBuckets(state) {
@@ -454,6 +486,7 @@ class VikunjaKanbanCard extends LitElement {
     }
 
     itemMove(task, direction, buckets) {
+        const state = this.hass.states[this.config.entity] || undefined;
         const taskId = this._normalizeId(task.id);
         if (!taskId || !buckets.length) {
             return;
@@ -472,8 +505,21 @@ class VikunjaKanbanCard extends LitElement {
 
         const targetBucket = buckets[targetIndex];
         const payload = {bucket_id: targetBucket.id};
+        const projectId = this._getProjectId(state);
+        const viewId = this._getViewId(state);
+        let moveRequest;
 
-        this._callVikunja('POST', `/tasks/${taskId}`, payload)
+        if (projectId && viewId) {
+            moveRequest = this._callVikunja(
+                'POST',
+                `/projects/${projectId}/views/${viewId}/buckets/${targetBucket.id}/tasks`,
+                {task_id: taskId},
+            ).catch(() => this._callVikunja('POST', `/tasks/${taskId}`, payload));
+        } else {
+            moveRequest = this._callVikunja('POST', `/tasks/${taskId}`, payload);
+        }
+
+        moveRequest
             .then(() => this._refreshEntity())
             .finally(() => {
                 this.requestUpdate();
@@ -550,13 +596,13 @@ class VikunjaKanbanCard extends LitElement {
                                                 ? html`<ha-icon-button @click=${() => this.itemMove(task, 'left', buckets)}>
                                                         <ha-icon icon="mdi:arrow-left">
                                                         </ha-icon>
-                                                    </button>`
+                                                    </ha-icon-button>`
                                                 : html``}
                                             ${index < buckets.length - 1
                                                 ? html`<ha-icon-button @click=${() => this.itemMove(task, 'right', buckets)}>
                                                         <ha-icon icon="mdi:arrow-right">
                                                         </ha-icon>
-                                                    </button>`
+                                                    </ha-icon-button>`
                                                 : html``}
                                             ${index === buckets.length - 1 && ((this.config.show_item_delete === undefined) || (this.config.show_item_delete !== false))
                                                 ? html`<ha-icon-button
