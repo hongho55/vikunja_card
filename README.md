@@ -36,7 +36,7 @@ This card uses a sensor entity as its data source. Your sensor should expose:
 
 If your endpoint already returns buckets with nested `tasks`, you can expose that directly and skip `tasks`.
 
-Example `rest_command` for write actions:
+By default the card calls the Vikunja integration service (`vikunja.call_api`). If you prefer `rest_command`, configure it like this:
 
 ```yaml
 rest_command:
@@ -47,6 +47,13 @@ rest_command:
       Authorization: !secret vikunja_api_token
       Content-Type: 'application/json'
     payload: '{{ payload }}'
+```
+
+If you want to override the service name/domain explicitly, set:
+
+```yaml
+service_domain: vikunja
+service_name: call_api
 ```
 
 Typical card config:
@@ -68,8 +75,8 @@ show_item_delete: true
 | `entity`             | `string`  | **required** | A sensor entity that provides Vikunja buckets/tasks.
 | `project_id`         | `number`  | optional     | Vikunja project ID used when creating new tasks.
 | `default_bucket_id`  | `number`  | optional     | Bucket ID for newly created tasks.
-| `service_domain`     | `string`  | `rest_command` | Service domain for API calls.
-| `service_name`       | `string`  | `vikunja`    | Service name for API calls.
+| `service_domain`     | `string`  | `vikunja`    | Service domain for API calls.
+| `service_name`       | `string`  | `call_api`   | Service name for API calls.
 | `show_header`        | `boolean` | `true`       | Show friendly name of the selected sensor in the card header.
 | `show_item_add`      | `boolean` | `true`       | Show text input for adding new tasks. Only shown in the first column.
 | `show_item_delete`   | `boolean` | `true`       | Show delete buttons. Only shown in the last column.

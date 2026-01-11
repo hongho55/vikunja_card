@@ -176,7 +176,7 @@ class VikunjaKanbanCardEditor extends LitElement {
 
             <div class="option">
                 <ha-textfield
-                    label="Service domain (default: rest_command)"
+                    label="Service domain (default: vikunja)"
                     .configValue=${'service_domain'}
                     .value=${this._service_domain}
                     @input=${this.valueChanged}
@@ -185,7 +185,7 @@ class VikunjaKanbanCardEditor extends LitElement {
 
             <div class="option">
                 <ha-textfield
-                    label="Service name (default: vikunja)"
+                    label="Service name (default: call_api)"
                     .configValue=${'service_name'}
                     .value=${this._service_name}
                     @input=${this.valueChanged}
@@ -367,8 +367,8 @@ class VikunjaKanbanCard extends LitElement {
     }
 
     _callVikunja(method, path, payload) {
-        const serviceDomain = this.config.service_domain || 'rest_command';
-        const serviceName = this.config.service_name || 'vikunja';
+        const serviceDomain = this.config.service_domain || 'vikunja';
+        const serviceName = this.config.service_name || 'call_api';
         const data = {
             method,
             path,
