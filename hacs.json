@@ -1,0 +1,6 @@
+{
+    "name": "Vikunja Kanban Card",
+    "content_in_root": true,
+    "filename": "vikunja-kanban-card.js",
+    "render_readme": true
+}
