@@ -125,6 +125,22 @@ class VikunjaKanbanCardEditor extends LitElement {
         return false;
     }
 
+    get _hide_done_bucket() {
+        if (this.config) {
+            return this.config.hide_done_bucket || false;
+        }
+
+        return false;
+    }
+
+    get _done_bucket_title() {
+        if (this.config) {
+            return this.config.done_bucket_title || '';
+        }
+
+        return '';
+    }
+
     get _header_font_size() {
         if (this.config) {
             return this.config.header_font_size || '';
@@ -422,6 +438,25 @@ class VikunjaKanbanCardEditor extends LitElement {
 
             <div class="option">
                 <ha-switch
+                    .checked=${(this.config.hide_done_bucket !== undefined) && (this.config.hide_done_bucket !== false)}
+                    .configValue=${'hide_done_bucket'}
+                    @change=${this.valueChanged}
+                >
+                </ha-switch>
+                <span>Hide done column</span>
+            </div>
+
+            <div class="option">
+                <ha-textfield
+                    label="Done column title override (optional)"
+                    .configValue=${'done_bucket_title'}
+                    .value=${this._done_bucket_title}
+                    @input=${this.valueChanged}
+                ></ha-textfield>
+            </div>
+
+            <div class="option">
+                <ha-switch
                     .checked=${this._enable_drag}
                     .configValue=${'enable_drag'}
                     @change=${this.valueChanged}
@@ -694,6 +729,44 @@ class VikunjaKanbanCard extends LitElement {
         });
 
         return withIndex.map(item => item.task);
+    }
+
+    _parseTitleList(value) {
+        if (!value) {
+            return new Set();
+        }
+        const items = Array.isArray(value)
+            ? value
+            : String(value).split(',');
+        const titles = new Set();
+        for (const item of items) {
+            const trimmed = String(item || '').trim();
+            if (!trimmed) {
+                continue;
+            }
+            titles.add(trimmed.toLowerCase());
+        }
+        return titles;
+    }
+
+    _filterBucketsByDone(buckets) {
+        if (!Array.isArray(buckets)) {
+            return [];
+        }
+        if (!this.config || !this.config.hide_done_bucket) {
+            return buckets;
+        }
+        const overrideTitles = this._parseTitleList(this.config.done_bucket_title);
+        const doneTitles = overrideTitles.size
+            ? overrideTitles
+            : new Set(['done', 'completed', '완료', '완료됨']);
+        return buckets.filter(bucket => {
+            const title = String(bucket.title || bucket.name || '').trim().toLowerCase();
+            if (!title) {
+                return true;
+            }
+            return !doneTitles.has(title);
+        });
     }
 
     _taskTitle(task) {
@@ -1051,6 +1124,8 @@ class VikunjaKanbanCard extends LitElement {
         }
 
         tasks = this._filterTasksByLabel(tasks, labelFilter);
+
+        buckets = this._filterBucketsByDone(buckets);
 
         if (!buckets.length) {
             buckets = [{
