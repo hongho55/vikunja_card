@@ -385,7 +385,11 @@ class VikunjaKanbanCard extends LitElement {
         };
 
         if (payload !== undefined) {
-            data.payload = JSON.stringify(payload);
+            if (serviceDomain === 'vikunja' && serviceName === 'call_api') {
+                data.payload = payload;
+            } else {
+                data.payload = JSON.stringify(payload);
+            }
         }
 
         return this.hass.callService(serviceDomain, serviceName, data);
