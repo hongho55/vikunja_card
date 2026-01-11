@@ -207,36 +207,45 @@ class VikunjaKanbanCardEditor extends LitElement {
     }
 
     valueChanged(e) {
-        if (
-            !this.config
-            || !this.hass
-            || (this[`_${e.target.configValue}`] === e.target.value)
-        ) {
+        if (!this.config || !this.hass) {
             return;
         }
 
-        if (e.target.configValue) {
-            const configValue = e.target.configValue;
-            const sizeFields = ['header_font_size', 'column_font_size', 'card_font_size', 'column_width'];
-            const rawValue = e.target.value;
-            const isEmptyString = typeof rawValue === 'string' && rawValue.trim() === '';
-            if (rawValue === undefined || rawValue === null || isEmptyString) {
+        const target = e.target;
+        if (!target || !target.configValue) {
+            return;
+        }
+
+        const configValue = target.configValue;
+        const sizeFields = ['header_font_size', 'column_font_size', 'card_font_size', 'column_width'];
+        const hasChecked = target.checked !== undefined;
+        const nextValue = hasChecked ? target.checked : target.value;
+
+        if (this[`_${configValue}`] === nextValue) {
+            return;
+        }
+
+        if (!hasChecked) {
+            const isEmptyString = typeof nextValue === 'string' && nextValue.trim() === '';
+            if (nextValue === undefined || nextValue === null || isEmptyString) {
                 if (!['entity'].includes(configValue)) {
                     const nextConfig = {...this.config};
                     delete nextConfig[configValue];
                     this.config = nextConfig;
                 }
-            } else {
-                this.config = {
-                    ...this.config,
-                    [configValue]: e.target.checked !== undefined
-                        ? e.target.checked
-                        : sizeFields.includes(configValue)
-                            ? rawValue
-                            : this.isNumeric(rawValue) ? parseFloat(rawValue) : rawValue,
-                };
+                this.configChanged(this.config);
+                return;
             }
         }
+
+        this.config = {
+            ...this.config,
+            [configValue]: hasChecked
+                ? target.checked
+                : sizeFields.includes(configValue)
+                    ? nextValue
+                    : this.isNumeric(nextValue) ? parseFloat(nextValue) : nextValue,
+        };
 
         this.configChanged(this.config);
     }

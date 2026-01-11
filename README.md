@@ -33,6 +33,7 @@ This card uses a sensor entity as its data source. Your sensor should expose:
 
 - `buckets`: list of buckets with `id` and `title` (or `name`).
 - `tasks`: list of tasks with `id`, `title` (or `content`), optional `description`, and `bucket_id`.
+- `view_id`: optional, but required for moving tasks on newer Vikunja versions.
 
 If your endpoint already returns buckets with nested `tasks`, you can expose that directly and skip `tasks`.
 
@@ -74,18 +75,30 @@ show_item_delete: true
 | `type`               | `string`  | **required** | `custom:vikunja-kanban-card`
 | `entity`             | `string`  | **required** | A sensor entity that provides Vikunja buckets/tasks.
 | `project_id`         | `number`  | optional     | Vikunja project ID used when creating new tasks.
+| `view_id`            | `number`  | optional     | Vikunja view ID for moving tasks between buckets.
 | `default_bucket_id`  | `number`  | optional     | Bucket ID for newly created tasks.
+| `header_font_size`   | `string`  | optional     | Header font size (e.g. `20px`, `1.2rem`).
+| `column_font_size`   | `string`  | optional     | Column font size (e.g. `14px`, `0.9rem`).
+| `card_font_size`     | `string`  | optional     | Task card font size (e.g. `13px`).
+| `column_width`       | `string`  | optional     | Column width (e.g. `220px`, `16rem`).
 | `service_domain`     | `string`  | `vikunja`    | Service domain for API calls.
 | `service_name`       | `string`  | `call_api`   | Service name for API calls.
 | `show_header`        | `boolean` | `true`       | Show friendly name of the selected sensor in the card header.
 | `show_item_add`      | `boolean` | `true`       | Show text input for adding new tasks. Only shown in the first column.
 | `show_item_delete`   | `boolean` | `true`       | Show delete buttons. Only shown in the last column.
 | `only_today_overdue` | `boolean` | `false`      | Only show tasks that are overdue or due today.
+| `due_sort`           | `string`  | optional     | Due date sorting: `none`, `due_first`, `date_asc`.
+| `due_first`          | `boolean` | `false`      | Legacy option. Use `due_sort: due_first` instead.
+| `show_labels`        | `boolean` | `true`       | Show label chips on each task card.
+| `label_filter`       | `string`  | optional     | Comma-separated label names or IDs to show (e.g. `결혼, 개발, 5`).
+| `compact_mode`       | `boolean` | `false`      | Reduce padding/margins for a denser layout.
+| `hide_done_bucket`   | `boolean` | `false`      | Hide the done/completed column.
+| `done_bucket_title`  | `string`  | optional     | Override done column titles (comma-separated, e.g. `완료, Done`).
+| `enable_drag`        | `boolean` | `true`       | Enable drag and drop to move tasks between columns.
 
 ## Actions
 
-- Right arrow: move the task to next column.
-- Left arrow: move the task to previous column.
+- Drag and drop: move the task between columns.
 - Cross: delete the selected task from Vikunja.
 - Input: add a new task using the input row.
 
