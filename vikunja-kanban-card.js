@@ -88,6 +88,38 @@ class VikunjaKanbanCardEditor extends LitElement {
         return false;
     }
 
+    get _due_first() {
+        if (this.config) {
+            return this.config.due_first || false;
+        }
+
+        return false;
+    }
+
+    get _show_labels() {
+        if (this.config) {
+            return (this.config.show_labels === undefined) || (this.config.show_labels !== false);
+        }
+
+        return true;
+    }
+
+    get _label_filter() {
+        if (this.config) {
+            return this.config.label_filter || '';
+        }
+
+        return '';
+    }
+
+    get _compact_mode() {
+        if (this.config) {
+            return this.config.compact_mode || false;
+        }
+
+        return false;
+    }
+
     get _header_font_size() {
         if (this.config) {
             return this.config.header_font_size || '';
@@ -336,6 +368,45 @@ class VikunjaKanbanCardEditor extends LitElement {
 
             <div class="option">
                 <ha-switch
+                    .checked=${(this.config.due_first !== undefined) && (this.config.due_first !== false)}
+                    .configValue=${'due_first'}
+                    @change=${this.valueChanged}
+                >
+                </ha-switch>
+                <span>Show tasks with due dates first</span>
+            </div>
+
+            <div class="option">
+                <ha-switch
+                    .checked=${this._show_labels}
+                    .configValue=${'show_labels'}
+                    @change=${this.valueChanged}
+                >
+                </ha-switch>
+                <span>Show label chips</span>
+            </div>
+
+            <div class="option">
+                <ha-textfield
+                    label="Label filter (comma-separated, optional)"
+                    .configValue=${'label_filter'}
+                    .value=${this._label_filter}
+                    @input=${this.valueChanged}
+                ></ha-textfield>
+            </div>
+
+            <div class="option">
+                <ha-switch
+                    .checked=${(this.config.compact_mode !== undefined) && (this.config.compact_mode !== false)}
+                    .configValue=${'compact_mode'}
+                    @change=${this.valueChanged}
+                >
+                </ha-switch>
+                <span>Compact mode</span>
+            </div>
+
+            <div class="option">
+                <ha-switch
                     .checked=${this._enable_drag}
                     .configValue=${'enable_drag'}
                     @change=${this.valueChanged}
@@ -514,6 +585,89 @@ class VikunjaKanbanCard extends LitElement {
         return Array.isArray(tasks) ? tasks : [];
     }
 
+    _parseLabelFilter(value) {
+        if (!value) {
+            return {titles: new Set(), ids: new Set()};
+        }
+        const items = Array.isArray(value)
+            ? value
+            : String(value).split(',');
+        const titles = new Set();
+        const ids = new Set();
+        for (const item of items) {
+            const trimmed = String(item || '').trim();
+            if (!trimmed) {
+                continue;
+            }
+            const numeric = Number(trimmed);
+            if (Number.isFinite(numeric)) {
+                ids.add(numeric);
+            } else {
+                titles.add(trimmed.toLowerCase());
+            }
+        }
+        return {titles, ids};
+    }
+
+    _getTaskLabels(task) {
+        if (!task || !Array.isArray(task.labels)) {
+            return [];
+        }
+        return task.labels.filter(label => label && (label.title || label.id));
+    }
+
+    _taskMatchesLabelFilter(task, labelFilter) {
+        if (!labelFilter || (labelFilter.titles.size === 0 && labelFilter.ids.size === 0)) {
+            return true;
+        }
+        const labels = this._getTaskLabels(task);
+        if (!labels.length) {
+            return false;
+        }
+        return labels.some(label => {
+            const labelId = this._normalizeId(label.id);
+            if (labelId !== null && labelFilter.ids.has(labelId)) {
+                return true;
+            }
+            const labelTitle = String(label.title || '').toLowerCase();
+            return labelTitle && labelFilter.titles.has(labelTitle);
+        });
+    }
+
+    _filterTasksByLabel(tasks, labelFilter) {
+        if (!Array.isArray(tasks)) {
+            return [];
+        }
+        if (!labelFilter || (labelFilter.titles.size === 0 && labelFilter.ids.size === 0)) {
+            return tasks;
+        }
+        return tasks.filter(task => this._taskMatchesLabelFilter(task, labelFilter));
+    }
+
+    _sortTasksByDue(tasks) {
+        if (!Array.isArray(tasks)) {
+            return [];
+        }
+        if (!this.config || !this.config.due_first) {
+            return tasks;
+        }
+        const withIndex = tasks.map((task, index) => ({
+            task,
+            index,
+            hasDue: Boolean(this._taskDueDate(task)),
+        }));
+        withIndex.sort((a, b) => {
+            if (a.hasDue && !b.hasDue) {
+                return -1;
+            }
+            if (!a.hasDue && b.hasDue) {
+                return 1;
+            }
+            return a.index - b.index;
+        });
+        return withIndex.map(item => item.task);
+    }
+
     _taskTitle(task) {
         return task.title || task.content || task.name || 'Untitled';
     }
@@ -523,13 +677,39 @@ class VikunjaKanbanCard extends LitElement {
     }
 
     _taskDueDate(task) {
+        let value = null;
         if (task.due_date) {
-            return task.due_date;
+            value = task.due_date;
+        } else if (task.due && task.due.date) {
+            value = task.due.date;
         }
-        if (task.due && task.due.date) {
-            return task.due.date;
+        if (!value) {
+            return null;
         }
-        return null;
+        const asString = String(value);
+        if (asString.startsWith('0001-01-01')) {
+            return null;
+        }
+        return asString;
+    }
+
+    _formatDueDate(value) {
+        if (!value) {
+            return '';
+        }
+        const match = String(value).match(/^\d{4}-\d{2}-\d{2}/);
+        return match ? match[0].replace(/-/g, '.') : String(value);
+    }
+
+    _labelColor(label) {
+        if (!label) {
+            return '';
+        }
+        const raw = String(label.hex_color || '').trim();
+        if (!raw) {
+            return '';
+        }
+        return raw.startsWith('#') ? raw : `#${raw}`;
     }
 
     _callVikunja(method, path, payload) {
@@ -802,6 +982,7 @@ class VikunjaKanbanCard extends LitElement {
 
         let tasks = this._getTasks();
         let buckets = this._getBuckets(state);
+        const labelFilter = this._parseLabelFilter(this.config.label_filter);
 
         if (this.config.only_today_overdue) {
             tasks = tasks.filter(task => {
@@ -819,6 +1000,8 @@ class VikunjaKanbanCard extends LitElement {
             });
         }
 
+        tasks = this._filterTasksByLabel(tasks, labelFilter);
+
         if (!buckets.length) {
             buckets = [{
                 id: 'default',
@@ -831,14 +1014,16 @@ class VikunjaKanbanCard extends LitElement {
             const bucketTasks = bucket.tasks
                 ? bucket.tasks
                 : tasks.filter(task => (task.bucket_id ?? task.section_id) == bucket.id);
+            const filteredTasks = this._filterTasksByLabel(bucketTasks, labelFilter);
             return {
                 ...bucket,
-                items: bucketTasks,
+                items: this._sortTasksByDue(filteredTasks),
             };
         });
 
         const showHeader = this.config.show_header ?? true;
         const enableDrag = this._dragEnabled();
+        const showLabels = (this.config.show_labels === undefined) || (this.config.show_labels !== false);
         const styleString = this._styleString({
             '--vkc-header-font-size': this._resolveCssSize(this.config.header_font_size),
             '--vkc-column-font-size': this._resolveCssSize(this.config.column_font_size),
@@ -846,7 +1031,11 @@ class VikunjaKanbanCard extends LitElement {
             '--vkc-column-width': this._resolveCssSize(this.config.column_width),
         });
 
-        return html`<ha-card class="${showHeader ? 'has-header' : ''} ${this._useDarkTheme ? 'dark': ''}" style="${styleString}">
+        const compactClass = (this.config.compact_mode !== undefined) && (this.config.compact_mode !== false)
+            ? 'compact'
+            : '';
+
+        return html`<ha-card class="${showHeader ? 'has-header' : ''} ${this._useDarkTheme ? 'dark': ''} ${compactClass}" style="${styleString}">
             <div class="container">
                 ${showHeader ? html`<h1 class="kanban-heading">${state.attributes.friendly_name}</h1>` : html``}
 
@@ -863,6 +1052,7 @@ class VikunjaKanbanCard extends LitElement {
                                 ${bucket.items.map(task => {
                                     const title = this._taskTitle(task);
                                     const description = this._taskDescription(task);
+                                    const due = this._formatDueDate(this._taskDueDate(task));
                                     return html`
                                         <div
                                             class="card"
@@ -871,24 +1061,24 @@ class VikunjaKanbanCard extends LitElement {
                                             @dragend=${this._onDragEnd}
                                             @pointerdown=${(event) => this._onPointerDown(task, event)}
                                         >
-                                            ${description
-                                                ? html`<div class="card-content">
-                                                    <span class="vikunja-item-content">${title}</span>
-                                                    <span class="vikunja-item-description">${description}</span>
+                                            <div class="card-content">
+                                                <span class="vikunja-item-content">${title}</span>
+                                                ${description
+                                                    ? html`<span class="vikunja-item-description">${description}</span>`
+                                                    : html``}
+                                            ${due
+                                                ? html`<span class="vikunja-item-due">${due}</span>`
+                                                : html``}
+                                            ${showLabels
+                                                ? html`<div class="vikunja-labels">
+                                                    ${this._getTaskLabels(task).map(label => {
+                                                        const color = this._labelColor(label);
+                                                        const labelStyle = color ? `--vkc-label-color: ${color};` : '';
+                                                        return html`<span class="vikunja-label-chip" style="${labelStyle}">${label.title}</span>`;
+                                                    })}
                                                 </div>`
-                                                : html`<span class="card-content">${title}</span>`}
-                                            ${index > 0
-                                                ? html`<ha-icon-button @click=${() => this.itemMove(task, 'left', buckets)}>
-                                                        <ha-icon icon="mdi:arrow-left">
-                                                        </ha-icon>
-                                                    </ha-icon-button>`
                                                 : html``}
-                                            ${index < buckets.length - 1
-                                                ? html`<ha-icon-button @click=${() => this.itemMove(task, 'right', buckets)}>
-                                                        <ha-icon icon="mdi:arrow-right">
-                                                        </ha-icon>
-                                                    </ha-icon-button>`
-                                                : html``}
+                                            </div>
                                             ${index === buckets.length - 1 && ((this.config.show_item_delete === undefined) || (this.config.show_item_delete !== false))
                                                 ? html`<ha-icon-button
                                                             class="vikunja-item-delete"
@@ -1040,10 +1230,59 @@ class VikunjaKanbanCard extends LitElement {
             width: 100%;
             display: flex;
             flex-direction: column;
+            gap: 2px;
         }
 
         .vikunja-item-description {
             font-size: x-small;
+        }
+
+        .vikunja-item-due {
+            font-size: x-small;
+            opacity: 0.7;
+        }
+
+        .vikunja-labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .vikunja-label-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: x-small;
+            background-color: var(--vkc-label-color, var(--secondary-background-color));
+            color: var(--primary-text-color);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .compact .container {
+            margin: 12px auto;
+        }
+
+        .compact .kanban-heading {
+            margin-bottom: 8px;
+        }
+
+        .compact .kanban-block {
+            margin-right: 8px;
+        }
+
+        .compact .kanban-block strong {
+            padding: 6px;
+            margin-bottom: 6px;
+        }
+
+        .compact .vikunja-list-add-row {
+            margin-bottom: 6px;
+        }
+
+        .compact .card {
+            padding: 6px;
+            margin: 0px 8px 8px 8px;
         }
 
         .vikunja-item-add {
