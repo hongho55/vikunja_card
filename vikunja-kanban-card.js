@@ -1587,9 +1587,9 @@ class VikunjaKanbanCard extends LitElement {
         }
 
         .vikunja-item-done {
-            width: 17px;
-            height: 17px;
-            margin: 0 4px 0 3px;
+            width: 15px;
+            height: 15px;
+            margin: 0 5px 0 1px;
             padding: 0;
             flex: 0 0 auto;
             accent-color: var(--primary-color);
