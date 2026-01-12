@@ -1096,6 +1096,11 @@ class VikunjaKanbanCard extends LitElement {
         if (!this._dragEnabled()) {
             return;
         }
+        const interactive = event.target?.closest?.('ha-checkbox, mwc-checkbox, ha-icon-button, button, input, textarea, select');
+        if (interactive) {
+            event.preventDefault();
+            return;
+        }
         const taskId = this._normalizeId(task.id);
         if (!taskId) {
             event.preventDefault();
@@ -1142,6 +1147,10 @@ class VikunjaKanbanCard extends LitElement {
 
     _onPointerDown(task, event) {
         if (!this._dragEnabled() || this._htmlDragActive) {
+            return;
+        }
+        const interactive = event.target?.closest?.('ha-checkbox, mwc-checkbox, ha-icon-button, button, input, textarea, select');
+        if (interactive) {
             return;
         }
         if (event.pointerType === 'mouse' && event.button !== 0) {
@@ -1392,7 +1401,8 @@ class VikunjaKanbanCard extends LitElement {
                                                 ? html`<ha-checkbox
                                                             class="vikunja-item-done"
                                                             .checked=${task.done === true}
-                                                            @change=${(event) => this._setTaskDone(task, event.target.checked)}
+                                                            @change=${(event) => this._setTaskDone(task, event.currentTarget.checked)}
+                                                            @click=${(event) => event.stopPropagation()}
                                                             @pointerdown=${(event) => event.stopPropagation()}
                                                         ></ha-checkbox>`
                                                 : html``}
@@ -1572,11 +1582,11 @@ class VikunjaKanbanCard extends LitElement {
         }
 
         .vikunja-item-done {
-            margin-right: 4px;
+            margin-right: 1px;
             flex: 0 0 auto;
-            --mdc-checkbox-size: 16px;
-            --mdc-checkbox-state-layer-size: 20px;
-            --mdc-checkbox-touch-target-size: 20px;
+            --mdc-checkbox-size: 14px;
+            --mdc-checkbox-state-layer-size: 18px;
+            --mdc-checkbox-touch-target-size: 18px;
         }
 
         .card-actions {
