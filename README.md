@@ -1,17 +1,20 @@
 # Vikunja Kanban Card
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![license_badge](https://img.shields.io/badge/license-MIT-green.svg)
 
 Vikunja kanban card for [Home Assistant](https://www.home-assistant.io) Lovelace UI. This card displays tasks from a Vikunja project in a kanban format.
 
 ## Installing
 
-### HACS
+### HACS (Custom repository)
 
-This card is available in [HACS](https://hacs.xyz) (Home Assistant Community Store).
+This card is installed through HACS as a custom repository.
 
-Just search for `Vikunja Kanban Card` in the HACS `Frontend` tab.
+1. In HACS, open the menu (three dots) -> `Custom repositories`.
+2. Add this repository URL and set the category to `Lovelace`.
+3. Search for `Vikunja Kanban Card` in the HACS `Frontend` tab and install it.
+4. Make sure a GitHub release tag exists so HACS can download the asset.
 
 ### Manual
 

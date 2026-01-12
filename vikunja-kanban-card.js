@@ -58,7 +58,7 @@ class VikunjaKanbanCardEditor extends LitElement {
 
     get _show_header() {
         if (this.config) {
-            return this.config.show_header || true;
+            return this.config.show_header ?? true;
         }
 
         return true;
@@ -66,7 +66,7 @@ class VikunjaKanbanCardEditor extends LitElement {
 
     get _show_item_add() {
         if (this.config) {
-            return this.config.show_item_add || true;
+            return this.config.show_item_add ?? true;
         }
 
         return true;
@@ -74,7 +74,7 @@ class VikunjaKanbanCardEditor extends LitElement {
 
     get _show_item_delete() {
         if (this.config) {
-            return this.config.show_item_delete || true;
+            return this.config.show_item_delete ?? true;
         }
 
         return true;
@@ -525,6 +525,15 @@ class VikunjaKanbanCard extends LitElement {
         }
 
         this.config = config;
+    }
+
+    updated(changedProperties) {
+        if (changedProperties.has('hass')) {
+            const hassDark = this.hass?.themes?.darkMode;
+            this._useDarkTheme = hassDark === undefined
+                ? VikunjaKanbanCard.isDarkTheme()
+                : hassDark;
+        }
     }
 
     getCardSize() {
@@ -1033,6 +1042,9 @@ class VikunjaKanbanCard extends LitElement {
 
     itemAdd() {
         const input = this.shadowRoot.getElementById('vikunja-card-item-add');
+        if (!input) {
+            return;
+        }
         const state = this.hass.states[this.config.entity] || undefined;
         const value = input.value.trim();
 
@@ -1169,7 +1181,10 @@ class VikunjaKanbanCard extends LitElement {
             ? 'compact'
             : '';
 
-        return html`<ha-card class="${showHeader ? 'has-header' : ''} ${this._useDarkTheme ? 'dark': ''} ${compactClass}" style="${styleString}">
+        const useDarkTheme = this.hass?.themes?.darkMode;
+        const darkClass = useDarkTheme === undefined ? this._useDarkTheme : useDarkTheme;
+
+        return html`<ha-card class="${showHeader ? 'has-header' : ''} ${darkClass ? 'dark': ''} ${compactClass}" style="${styleString}">
             <div class="container">
                 ${showHeader ? html`<h1 class="kanban-heading">${state.attributes.friendly_name}</h1>` : html``}
 
@@ -1213,6 +1228,18 @@ class VikunjaKanbanCard extends LitElement {
                                                 </div>`
                                                 : html``}
                                             </div>
+                                            ${index > 0
+                                                ? html`<ha-icon-button @click=${() => this.itemMove(task, 'left', buckets)}>
+                                                        <ha-icon icon="mdi:arrow-left">
+                                                        </ha-icon>
+                                                    </ha-icon-button>`
+                                                : html``}
+                                            ${index < buckets.length - 1
+                                                ? html`<ha-icon-button @click=${() => this.itemMove(task, 'right', buckets)}>
+                                                        <ha-icon icon="mdi:arrow-right">
+                                                        </ha-icon>
+                                                    </ha-icon-button>`
+                                                : html``}
                                             ${index === buckets.length - 1 && ((this.config.show_item_delete === undefined) || (this.config.show_item_delete !== false))
                                                 ? html`<ha-icon-button
                                                             class="vikunja-item-delete"
