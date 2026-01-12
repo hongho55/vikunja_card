@@ -1593,7 +1593,7 @@ class VikunjaKanbanCard extends LitElement {
             padding: 0;
             flex: 0 0 auto;
             accent-color: var(--primary-color);
-            transform: scale(0.9);
+            transform: scale(1);
             transform-origin: left center;
         }
 
