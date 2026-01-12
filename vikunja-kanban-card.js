@@ -1096,7 +1096,9 @@ class VikunjaKanbanCard extends LitElement {
         if (!this._dragEnabled()) {
             return;
         }
-        const interactive = event.target?.closest?.('ha-checkbox, mwc-checkbox, ha-icon-button, button, input, textarea, select');
+        const interactive = event.target?.closest?.(
+            '.vikunja-item-done-wrap, ha-checkbox, mwc-checkbox, ha-icon-button, button, input, textarea, select',
+        );
         if (interactive) {
             event.preventDefault();
             return;
@@ -1149,7 +1151,9 @@ class VikunjaKanbanCard extends LitElement {
         if (!this._dragEnabled() || this._htmlDragActive) {
             return;
         }
-        const interactive = event.target?.closest?.('ha-checkbox, mwc-checkbox, ha-icon-button, button, input, textarea, select');
+        const interactive = event.target?.closest?.(
+            '.vikunja-item-done-wrap, ha-checkbox, mwc-checkbox, ha-icon-button, button, input, textarea, select',
+        );
         if (interactive) {
             return;
         }
@@ -1398,13 +1402,14 @@ class VikunjaKanbanCard extends LitElement {
                                             @pointerdown=${(event) => this._onPointerDown(task, event)}
                                         >
                                             ${itemAction === 'done'
-                                                ? html`<ha-checkbox
+                                                ? html`<input
+                                                            type="checkbox"
                                                             class="vikunja-item-done"
                                                             .checked=${task.done === true}
                                                             @change=${(event) => this._setTaskDone(task, event.currentTarget.checked)}
                                                             @click=${(event) => event.stopPropagation()}
                                                             @pointerdown=${(event) => event.stopPropagation()}
-                                                        ></ha-checkbox>`
+                                                        >`
                                                 : html``}
                                             <div class="card-content">
                                                 <span class="vikunja-item-content">${title}</span>
@@ -1582,11 +1587,14 @@ class VikunjaKanbanCard extends LitElement {
         }
 
         .vikunja-item-done {
-            margin-right: 1px;
+            width: 14px;
+            height: 14px;
+            margin: 0 4px 0 -8px;
+            padding: 0;
             flex: 0 0 auto;
-            --mdc-checkbox-size: 14px;
-            --mdc-checkbox-state-layer-size: 18px;
-            --mdc-checkbox-touch-target-size: 18px;
+            accent-color: var(--primary-color);
+            transform: scale(0.9);
+            transform-origin: left center;
         }
 
         .card-actions {
