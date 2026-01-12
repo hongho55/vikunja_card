@@ -221,7 +221,7 @@ class VikunjaKanbanCardEditor extends LitElement {
         const hasChecked = target.checked !== undefined;
         const nextValue = hasChecked ? target.checked : target.value;
 
-        if (this[`_${configValue}`] === nextValue) {
+        if (!hasChecked && this[`_${configValue}`] === nextValue) {
             return;
         }
 
